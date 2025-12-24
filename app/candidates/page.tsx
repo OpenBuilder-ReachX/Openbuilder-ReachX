@@ -97,8 +97,8 @@ export default async function CandidatesPage({ searchParams }: { searchParams: {
               + Quick Add (Standard)
             </button>
           </form>
-          <button className="rounded-md border border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800">
-            Import CVs
+          <button disabled className="rounded-md border border-neutral-200 px-4 py-2 text-sm text-neutral-400 cursor-not-allowed dark:border-neutral-800">
+            Import (Coming Soon)
           </button>
         </div>
       </header>
@@ -158,10 +158,10 @@ export default async function CandidatesPage({ searchParams }: { searchParams: {
                     <td className="px-3 py-2">
                       <span
                         className={`rounded-full px-2 py-1 text-xs ${computedStatus === 'Green'
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                            : computedStatus === 'Yellow'
-                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                          : computedStatus === 'Yellow'
+                            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                           }`}
                       >
                         {computedStatus}
