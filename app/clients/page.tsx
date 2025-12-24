@@ -1,21 +1,35 @@
-'use client';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
-type ClientRow = {
-  id: string;
-  name: string;
-  contact: string;
-  projects: number;
-  status: 'Active' | 'Prospect' | 'Dormant';
-};
+export default async function ClientsPage() {
+  const supabase = createSupabaseServer();
+  const { data: clients, error } = await supabase
+    .from('clients')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-export default function ClientsPage() {
-  const rows: ClientRow[] = Array.from({ length: 8 }).map((_, i) => ({
-    id: `CLI-${2000 + i}`,
-    name: `Client ${String.fromCharCode(65 + (i % 26))}`,
-    contact: `contact${i + 1}@example.com`,
-    projects: (i % 5) + 1,
-    status: (['Active', 'Prospect', 'Dormant'] as const)[i % 3],
-  }));
+  if (error) {
+    console.error('Error fetching clients:', error);
+  }
+
+  // Helper action to create a dummy client for testing
+  async function createDummyClient() {
+    'use server';
+    const supabase = createSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return redirect('/login');
+
+    await supabase.from('clients').insert({
+      agency_id: user.id, // Linked to the logged-in user's agency
+      name: 'Client ' + Math.floor(Math.random() * 1000),
+      contact_email: 'contact@example.com',
+      status: 'Prospect',
+      // projects count not in schema yet, assumed 0 or relation
+    });
+    revalidatePath('/clients');
+  }
 
   return (
     <div className="space-y-8">
@@ -27,9 +41,11 @@ export default function ClientsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-neutral-900">
-            New Client
-          </button>
+          <form action={createDummyClient}>
+            <button className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-neutral-900">
+              + Quick Add (Test)
+            </button>
+          </form>
           <button className="rounded-md border border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800">
             Import
           </button>
@@ -54,30 +70,34 @@ export default function ClientsPage() {
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-left text-neutral-500 dark:text-neutral-400">
-                <th className="px-3 py-2">ID</th>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Primary Contact</th>
-                <th className="px-3 py-2">Projects</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, idx) => (
-                <tr key={r.id} className={idx % 2 === 0 ? 'bg-neutral-50 dark:bg-neutral-800' : undefined}>
-                  <td className="px-3 py-2 font-mono">{r.id}</td>
-                  <td className="px-3 py-2">{r.name}</td>
-                  <td className="px-3 py-2">{r.contact}</td>
-                  <td className="px-3 py-2">{r.projects}</td>
+              {/* Show Empty State */}
+              {(!clients || clients.length === 0) && (
+                <tr>
+                  <td colSpan={4} className="px-3 py-8 text-center text-neutral-500">
+                    No clients found. Click "Quick Add" to test.
+                  </td>
+                </tr>
+              )}
+
+              {clients?.map((r) => (
+                <tr key={r.id} className="border-t border-neutral-100 dark:border-neutral-800">
+                  <td className="px-3 py-2 font-medium">{r.name}</td>
+                  <td className="px-3 py-2">{r.contact_email}</td>
                   <td className="px-3 py-2">
                     <span
-                      className={`rounded-full px-2 py-1 text-xs ${
-                        r.status === 'Active'
+                      className={`rounded-full px-2 py-1 text-xs ${r.status === 'Active'
                           ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                           : r.status === 'Prospect'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                          : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
-                      }`}
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                            : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                        }`}
                     >
                       {r.status}
                     </span>

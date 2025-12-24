@@ -37,6 +37,7 @@ create table public.candidates (
   availability text,
   status text default 'Green' check (status in ('Green', 'Yellow', 'Red')),
   compliance_notes text,
+  document_expiry_date date,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

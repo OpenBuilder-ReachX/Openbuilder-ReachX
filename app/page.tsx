@@ -1,75 +1,69 @@
-'use client';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import Link from 'next/link';
 
-export default function AgencySetupPage() {
+export default async function DashboardPage() {
+  const supabase = createSupabaseServer();
+
+  // Fetch counts
+  const { count: candidateCount } = await supabase.from('candidates').select('*', { count: 'exact', head: true });
+  const { count: clientCount } = await supabase.from('clients').select('*', { count: 'exact', head: true });
+  const { count: greenCount } = await supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('status', 'Green');
+
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-semibold">Agency Setup & Jurisdiction</h1>
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-          Configure agency profile, jurisdiction, and defaults (Mauritius). All changes are logged.
+          Overview of agency operations.
         </p>
       </header>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-          <h2 className="text-lg font-semibold">Agency Profile</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-sm text-neutral-600 dark:text-neutral-400">Agency Name</label>
-              <input className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="ReachX" />
-            </div>
-            <div>
-              <label className="text-sm text-neutral-600 dark:text-neutral-400">Contact Email</label>
-              <input className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="ops@reachx.com" />
-            </div>
-            <div>
-              <label className="text-sm text-neutral-600 dark:text-neutral-400">Default Currency</label>
-              <select className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950">
-                <option>MUR</option>
-                <option>USD</option>
-                <option>EUR</option>
-                <option>GBP</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm text-neutral-600 dark:text-neutral-400">Tax Registration</label>
-              <input className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="Tax Account No. / VAT (Mauritius)" />
-            </div>
-          </div>
-          <div className="mt-4 flex gap-2">
-            <button className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-neutral-900">Save</button>
-            <button className="rounded-md border border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800">Discard</button>
-          </div>
-        </div>
+      {/* KPI Cards */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <Link href="/candidates" className="block rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Total Candidates</div>
+          <div className="mt-2 text-3xl font-bold">{candidateCount || 0}</div>
+        </Link>
 
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-          <h2 className="text-lg font-semibold">Jurisdiction & Defaults</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-sm text-neutral-600 dark:text-neutral-400">Country / Jurisdiction</label>
-              <select className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950">
-                <option>Mauritius</option>
-                <option>United States</option>
-                <option>United Kingdom</option>
-                <option>United Arab Emirates</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm text-neutral-600 dark:text-neutral-400">Labour Authority</label>
-              <input className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="Ministry of Labour, Human Resource Development and Training" />
-            </div>
-            <div>
-              <label className="text-sm text-neutral-600 dark:text-neutral-400">Default Working Hours</label>
-              <input type="number" className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="9" />
-            </div>
-            <div>
-              <label className="text-sm text-neutral-600 dark:text-neutral-400">Default Minimum Salary (MUR)</label>
-              <input type="number" className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="e.g., 15000" />
-            </div>
-          </div>
-          <div className="mt-4 text-xs text-neutral-500 dark:text-neutral-400">
-            Note: Rules are editable and versioned. Validate against Mauritius national minimum wage or sector agreements.
-          </div>
+        <Link href="/clients" className="block rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Active Clients</div>
+          <div className="mt-2 text-3xl font-bold">{clientCount || 0}</div>
+        </Link>
+
+        <Link href="/candidates?status=Green" className="block rounded-xl border border-neutral-200 bg-green-50 p-6 shadow-sm transition hover:shadow-md dark:border-neutral-800 dark:bg-green-900/10">
+          <div className="text-sm font-medium text-green-700 dark:text-green-400">Ready to Deploy</div>
+          <div className="mt-2 text-3xl font-bold text-green-700 dark:text-green-400">{greenCount || 0}</div>
+        </Link>
+
+        <div className="block rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Jurisdiction</div>
+          <div className="mt-2 text-xl font-semibold">Mauritius</div>
+          <div className="text-xs text-neutral-500">Compliance Active</div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <section>
+        <h2 className="text-lg font-semibold">Quick Actions</h2>
+        <div className="mt-4 flex flex-wrap gap-4">
+          <Link
+            href="/candidates"
+            className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-neutral-900"
+          >
+            Manage Candidates
+          </Link>
+          <Link
+            href="/clients"
+            className="rounded-md border border-neutral-200 bg-white px-4 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-900"
+          >
+            Add Client
+          </Link>
+          <Link
+            href="/agency"
+            className="rounded-md border border-neutral-200 bg-white px-4 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-900"
+          >
+            Setup Agency Profile
+          </Link>
         </div>
       </section>
     </div>
