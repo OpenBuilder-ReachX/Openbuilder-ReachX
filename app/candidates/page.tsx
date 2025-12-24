@@ -1,53 +1,82 @@
+'use client';
+
+// Converting to Client Component to support Filters (for v1 MVP)
+// ideally we keep it server, but for "Quick Actions" + "Filters" 
+// in a single file without URL state complexity, this is faster to iterate.
+// Wait, we can keep it Server and use URL params for search, but for step-by-step verification
+// let's stick to the Server Component pattern we established, and just add a Search Form.
+
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-export default async function CandidatesPage() {
+export default async function CandidatesPage({ searchParams }: { searchParams: { q?: string; status?: string } }) {
   const supabase = createSupabaseServer();
-  const { data: candidates, error } = await supabase
-    .from('candidates')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return redirect('/login');
 
-  if (error) {
-    console.error('Error fetching candidates:', error);
+  // Get User's Agency ID
+  const { data: profile } = await supabase.from('profiles').select('agency_id').eq('id', user.id).single();
+  const agencyId = profile?.agency_id;
+
+  if (!agencyId) {
+    return <div>Error: No Agency Profile. Please contact support.</div>;
   }
 
-  // Helper action to create a dummy candidate for testing
-  async function createDummyCandidate() {
+  // Fetch Candidates with Filters
+  let query = supabase.from('candidates').select('*').eq('agency_id', agencyId).order('created_at', { ascending: false });
+
+  if (searchParams?.status && searchParams.status !== 'All Status') {
+    query = query.eq('status', searchParams.status);
+  }
+
+  // Note: 'ilike' filter for name would need a slightly different query construction or RPC for "name search"
+  // For MVP v1, we'll just fetch all and let the user filter via SQL if strict, 
+  // or we add a text search column. 
+  // Let's implement a basic 'ilike' on last_name for the 'q' param.
+  if (searchParams?.q) {
+    query = query.ilike('last_name', `%${searchParams.q}%`);
+  }
+
+  const { data: candidates, error } = await query;
+  if (error) console.error('Error fetching:', error);
+
+
+  // Action: Create Candidate (Deterministic)
+  async function createQuickCandidate() {
     'use server';
     const supabase = createSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) return redirect('/login');
 
-    // Random expiry date: 50% chance of being expired or close
-    const daysOffset = Math.floor(Math.random() * 60) - 10; // -10 to +50 days from now
+    const { data: profile } = await supabase.from('profiles').select('agency_id').eq('id', user.id).single();
+    if (!profile?.agency_id) return;
+
+    // DETERMINISTIC: Always valid for 1 year.
+    // "Trust Fix": No more random red flags.
     const expiry = new Date();
-    expiry.setDate(expiry.getDate() + daysOffset);
+    expiry.setFullYear(expiry.getFullYear() + 1);
 
     await supabase.from('candidates').insert({
-      agency_id: user.id, // Linked to the logged-in user's agency
-      first_name: 'John',
-      last_name: 'Doe ' + Math.floor(Math.random() * 1000),
+      agency_id: profile.agency_id,
+      first_name: 'New',
+      last_name: 'Candidate',
       nationality: 'MU',
       role: 'General Worker',
       availability: 'Immediate',
       status: 'Green',
       document_expiry_date: expiry.toISOString(),
-      compliance_notes: 'Created via Quick Add',
+      compliance_notes: 'Quick Add (Valid 1yr)',
     });
     revalidatePath('/candidates');
   }
 
-  // Compliance Logic (Client-Side for Display)
+  // Compliance Logic (Display)
   function getComputedStatus(c: any) {
     if (!c.document_expiry_date) return c.status;
-
     const expiry = new Date(c.document_expiry_date);
     const now = new Date();
     const daysUntil = (expiry.getTime() - now.getTime()) / (1000 * 3600 * 24);
-
     if (daysUntil < 0) return 'Red';
     if (daysUntil < 30) return 'Yellow';
     return 'Green';
@@ -59,16 +88,15 @@ export default async function CandidatesPage() {
         <div>
           <h1 className="text-2xl font-semibold">Candidates</h1>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-            Deep profiles with compliance status and availability (Mauritius).
+            Deep profiles with compliance status and availability.
           </p>
         </div>
         <div className="flex gap-2">
-          <form action={createDummyCandidate}>
+          <form action={createQuickCandidate}>
             <button className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-neutral-900">
-              + Quick Add (Test)
+              + Quick Add (Standard)
             </button>
           </form>
-          {/* CSV Download Link would go here, maybe pointing to an API route */}
           <button className="rounded-md border border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800">
             Import CVs
           </button>
@@ -76,21 +104,29 @@ export default async function CandidatesPage() {
       </header>
 
       <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="flex flex-wrap items-center gap-2">
+        <form className="flex flex-wrap items-center gap-2 mb-4">
           <input
+            name="q"
+            defaultValue={searchParams?.q || ''}
             className="w-48 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950"
-            placeholder="Search candidates…"
+            placeholder="Search last name…"
           />
-          {/* Filters can be wired later */}
-          <select className="rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950">
-            <option>All Status</option>
-            <option>Green</option>
-            <option>Yellow</option>
-            <option>Red</option>
+          <select
+            name="status"
+            defaultValue={searchParams?.status || 'All Status'}
+            className="rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950"
+          >
+            <option value="">All Status</option>
+            <option value="Green">Green</option>
+            <option value="Yellow">Yellow</option>
+            <option value="Red">Red</option>
           </select>
-        </div>
+          <button type="submit" className="rounded-md border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-800">
+            Filter
+          </button>
+        </form>
 
-        <div className="mt-4 overflow-x-auto">
+        <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-left text-neutral-500 dark:text-neutral-400">
@@ -103,11 +139,10 @@ export default async function CandidatesPage() {
               </tr>
             </thead>
             <tbody>
-              {/* Show Empty State if no candidates */}
               {(!candidates || candidates.length === 0) && (
                 <tr>
                   <td colSpan={6} className="px-3 py-8 text-center text-neutral-500">
-                    No candidates found. Click "Quick Add" to test the database connection.
+                    No candidates found.
                   </td>
                 </tr>
               )}

@@ -4,29 +4,32 @@ import { redirect } from 'next/navigation';
 
 export default async function ClientsPage() {
   const supabase = createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
   const { data: clients, error } = await supabase
     .from('clients')
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching clients:', error);
-  }
+  if (error) console.error('Error fetching clients:', error);
 
-  // Helper action to create a dummy client for testing
+  // Helper action to create a dummy client
   async function createDummyClient() {
     'use server';
     const supabase = createSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) return redirect('/login');
 
+    // Get proper Agency ID
+    const { data: profile } = await supabase.from('profiles').select('agency_id').eq('id', user.id).single();
+    if (!profile?.agency_id) return;
+
     await supabase.from('clients').insert({
-      agency_id: user.id, // Linked to the logged-in user's agency
+      agency_id: profile.agency_id, // Correct Tenancy Link
       name: 'Client ' + Math.floor(Math.random() * 1000),
       contact_email: 'contact@example.com',
       status: 'Prospect',
-      // projects count not in schema yet, assumed 0 or relation
     });
     revalidatePath('/clients');
   }
@@ -43,7 +46,7 @@ export default async function ClientsPage() {
         <div className="flex gap-2">
           <form action={createDummyClient}>
             <button className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-neutral-900">
-              + Quick Add (Test)
+              + Quick Add
             </button>
           </form>
           <button className="rounded-md border border-neutral-200 px-4 py-2 text-sm dark:border-neutral-800">
@@ -77,11 +80,10 @@ export default async function ClientsPage() {
               </tr>
             </thead>
             <tbody>
-              {/* Show Empty State */}
               {(!clients || clients.length === 0) && (
                 <tr>
                   <td colSpan={4} className="px-3 py-8 text-center text-neutral-500">
-                    No clients found. Click "Quick Add" to test.
+                    No clients found.
                   </td>
                 </tr>
               )}
