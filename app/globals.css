@@ -2,11 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
-/* No global colors; components decide their own colors */
+:root {
+  /* Glass Citadel Palette */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --glass-blur: 12px;
+  
+  --primary-accent: #0f172a; /* Slate 900 */
+  --secondary-accent: #3b82f6; /* Blue 500 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --glass-bg: rgba(15, 23, 42, 0.6); /* Darker Slate */
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+}
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  /* Mesh Gradient Background */
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+  background-attachment: fixed;
+  background-size: cover;
+  
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #0f172a;
+}
+
+/* Glass Card Utility */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Typography Enhancements */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.02em; /* Tight tracking like Linear */
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; 
 }
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
+  
+  /* Animation Utilities */
+  .fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

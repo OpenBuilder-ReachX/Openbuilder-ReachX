@@ -1,14 +1,7 @@
-'use client';
-
-// Converting to Client Component to support Filters (for v1 MVP)
-// ideally we keep it server, but for "Quick Actions" + "Filters" 
-// in a single file without URL state complexity, this is faster to iterate.
-// Wait, we can keep it Server and use URL params for search, but for step-by-step verification
-// let's stick to the Server Component pattern we established, and just add a Search Form.
-
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import CandidateDropZone from './CandidateDropZone';
 
 export default async function CandidatesPage({ searchParams }: { searchParams: { q?: string; status?: string } }) {
   const supabase = createSupabaseServer();
@@ -30,10 +23,6 @@ export default async function CandidatesPage({ searchParams }: { searchParams: {
     query = query.eq('status', searchParams.status);
   }
 
-  // Note: 'ilike' filter for name would need a slightly different query construction or RPC for "name search"
-  // For MVP v1, we'll just fetch all and let the user filter via SQL if strict, 
-  // or we add a text search column. 
-  // Let's implement a basic 'ilike' on last_name for the 'q' param.
   if (searchParams?.q) {
     query = query.ilike('last_name', `%${searchParams.q}%`);
   }
@@ -43,7 +32,7 @@ export default async function CandidatesPage({ searchParams }: { searchParams: {
 
 
   // Action: Create Candidate (Deterministic)
-  async function createQuickCandidate() {
+  async function createQuickCandidate(formData: FormData) {
     'use server';
     const supabase = createSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
@@ -53,20 +42,38 @@ export default async function CandidatesPage({ searchParams }: { searchParams: {
     if (!profile?.agency_id) return;
 
     // DETERMINISTIC: Always valid for 1 year.
-    // "Trust Fix": No more random red flags.
     const expiry = new Date();
     expiry.setFullYear(expiry.getFullYear() + 1);
 
+    // Upload Evidence (if provided)
+    const file = formData.get('cv_file') as File;
+    let cvPath = null;
+
+    if (file && file.size > 0) {
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('evidence')
+        .upload(`${profile.agency_id}/${Date.now()}_${file.name}`, file);
+
+      if (uploadError) console.error('Upload error:', uploadError);
+      if (uploadData) cvPath = uploadData.path;
+    }
+
+    const nameFirst = (formData.get('first_name') as string) || 'New';
+    const nameLast = (formData.get('last_name') as string) || 'Candidate';
+    const roleDetected = (formData.get('role') as string) || 'General Worker';
+
     await supabase.from('candidates').insert({
       agency_id: profile.agency_id,
-      first_name: 'New',
-      last_name: 'Candidate',
+      first_name: nameFirst,
+      last_name: nameLast,
       nationality: 'MU',
-      role: 'General Worker',
+      role: roleDetected,
       availability: 'Immediate',
       status: 'Green',
       document_expiry_date: expiry.toISOString(),
-      compliance_notes: 'Quick Add (Valid 1yr)',
+      compliance_notes: 'AI Imported (Valid 1yr)',
+      cv_file_path: cvPath,
     });
     revalidatePath('/candidates');
   }
@@ -91,18 +98,24 @@ export default async function CandidatesPage({ searchParams }: { searchParams: {
             Deep profiles with compliance status and availability.
           </p>
         </div>
-        <div className="flex gap-2">
-          <form action={createQuickCandidate}>
-            <button className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-neutral-900">
-              + Quick Add (Standard)
-            </button>
-          </form>
-          <button disabled className="rounded-md border border-neutral-200 px-4 py-2 text-sm text-neutral-400 cursor-not-allowed dark:border-neutral-800">
-            Import (Coming Soon)
-          </button>
+
+        {/* Actions */}
+        <div className="flex gap-4 items-start">
+          <a
+            href="/candidates/import"
+            className="rounded-md border border-neutral-200 px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-50 dark:border-neutral-800 flex items-center"
+          >
+            Import CSV
+          </a>
         </div>
       </header>
 
+      {/* AI DROP ZONE HERO */}
+      <section className="mb-8">
+        <CandidateDropZone onUpload={createQuickCandidate} />
+      </section>
+
+      {/* Legacy Search/Filter Section */}
       <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
         <form className="flex flex-wrap items-center gap-2 mb-4">
           <input
@@ -110,11 +123,13 @@ export default async function CandidatesPage({ searchParams }: { searchParams: {
             defaultValue={searchParams?.q || ''}
             className="w-48 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950"
             placeholder="Search last name…"
+            aria-label="Search candidates"
           />
           <select
             name="status"
             defaultValue={searchParams?.status || 'All Status'}
             className="rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950"
+            aria-label="Filter status"
           >
             <option value="">All Status</option>
             <option value="Green">Green</option>
@@ -173,7 +188,27 @@ export default async function CandidatesPage({ searchParams }: { searchParams: {
                       )}
                     </td>
                     <td className="px-3 py-2">
-                      <button className="rounded-md border border-neutral-200 px-2 py-1 dark:border-neutral-800">View</button>
+                      {r.cv_file_path ? (
+                        <div className="flex gap-2 text-xs">
+                          <a
+                            href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/evidence/${r.cv_file_path}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            View CV
+                          </a>
+                          <span className="text-neutral-300">|</span>
+                          <a
+                            href={`/candidates/${r.id}/print`}
+                            className="text-neutral-600 hover:text-neutral-900 font-medium"
+                          >
+                            Blind PDF
+                          </a>
+                        </div>
+                      ) : (
+                        <button disabled className="text-neutral-300 cursor-not-allowed">No CV</button>
+                      )}
                     </td>
                   </tr>
                 )

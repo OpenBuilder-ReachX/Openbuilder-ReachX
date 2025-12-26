@@ -81,15 +81,15 @@ export default async function AgencyPage() {
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-sm text-neutral-600 dark:text-neutral-400">Agency Name</label>
-                  <input name="name" defaultValue={agency.name} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="ReachX" />
+                  <input name="name" aria-label="Agency Name" defaultValue={agency.name} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="ReachX" />
                 </div>
                 <div>
                   <label className="text-sm text-neutral-600 dark:text-neutral-400">Contact Email</label>
-                  <input name="contact_email" defaultValue={agency.contact_email} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="ops@reachx.com" />
+                  <input name="contact_email" aria-label="Contact Email" defaultValue={agency.contact_email} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="ops@reachx.com" />
                 </div>
                 <div>
                   <label className="text-sm text-neutral-600 dark:text-neutral-400">Default Currency</label>
-                  <select name="currency" defaultValue={agency.currency || 'MUR'} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950">
+                  <select name="currency" aria-label="Default Currency" defaultValue={agency.currency || 'MUR'} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950">
                     <option value="MUR">MUR</option>
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
@@ -98,7 +98,7 @@ export default async function AgencyPage() {
                 </div>
                 <div>
                   <label className="text-sm text-neutral-600 dark:text-neutral-400">Tax Registration</label>
-                  <input name="tax_registration" defaultValue={agency.tax_registration || ''} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="Tax Account No." />
+                  <input name="tax_registration" aria-label="Tax Registration" defaultValue={agency.tax_registration || ''} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="Tax Account No." />
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
@@ -111,7 +111,7 @@ export default async function AgencyPage() {
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-sm text-neutral-600 dark:text-neutral-400">Country / Jurisdiction</label>
-                  <select name="country" defaultValue={agency.country || 'Mauritius'} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950">
+                  <select name="country" aria-label="Country" defaultValue={agency.country || 'Mauritius'} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950">
                     <option value="Mauritius">Mauritius</option>
                     <option value="United States">United States</option>
                     <option value="United Kingdom">United Kingdom</option>
@@ -120,15 +120,15 @@ export default async function AgencyPage() {
                 </div>
                 <div>
                   <label className="text-sm text-neutral-600 dark:text-neutral-400">Labour Authority</label>
-                  <input name="labour_authority" defaultValue={agency.labour_authority || ''} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="Ministry name" />
+                  <input name="labour_authority" aria-label="Labour Authority" defaultValue={agency.labour_authority || ''} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="Ministry name" />
                 </div>
                 <div>
                   <label className="text-sm text-neutral-600 dark:text-neutral-400">Default Working Hours</label>
-                  <input name="default_working_hours" type="number" defaultValue={agency.default_working_hours || 9} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="9" />
+                  <input name="default_working_hours" aria-label="Default Working Hours" type="number" defaultValue={agency.default_working_hours || 9} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="9" />
                 </div>
                 <div>
                   <label className="text-sm text-neutral-600 dark:text-neutral-400">Default Minimum Salary (MUR)</label>
-                  <input name="default_min_salary" type="number" defaultValue={agency.default_min_salary || ''} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="e.g., 15000" />
+                  <input name="default_min_salary" aria-label="Default Minimum Salary" type="number" defaultValue={agency.default_min_salary || ''} className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950" placeholder="e.g., 15000" />
                 </div>
               </div>
             </div>
